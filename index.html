@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Halal Scanner</title>
+    <!-- Tailwind CSS for Beautiful Modern UI -->
+    <script src="https://jsdelivr.net"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <!-- Html5-Qrcode Library for Smartphone Camera Barcode Scanning -->
+    <script src="https://cloudflare.com"></script>
+    
+    <!-- PWA Capabilities to turn the Web Page into a Mobile App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://flaticon.com">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-emerald-600 text-white shadow-md p-4 text-center sticky top-0 z-50">
+        <h1 class="text-xl font-bold tracking-wide"><i class="fa-solid fa-qrcode-scan mr-2"></i> Halal Scan AI</h1>
+        <p class="text-xs text-emerald-100 mt-0.5">Global PWA Barcode Ingredient Verifier</p>
+    </header>
+
+    <!-- Main Content App Wrapper -->
+    <main class="flex-grow p-4 max-w-md mx-auto w-full space-y-4">
+        
+        <!-- PWA Banner Prompt for Mobile Users -->
+        <div id="pwa-prompt" class="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 text-sm flex items-center justify-between shadow-xs">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-mobile-screen-button text-lg text-amber-600"></i>
+                <span>Tap your browser settings & select <strong>"Add to Home Screen"</strong> to use as a native app.</span>
+            </div>
+            <button onclick="document.getElementById('pwa-prompt').remove()" class="text-amber-500 hover:text-amber-800 p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Scanner Viewfinder Container -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 overflow-hidden relative">
+            <h2 class="text-sm font-semibold text-slate-500 mb-2 uppercase tracking-wider text-center">Live Camera Scanner</h2>
+            <div id="reader" class="w-full bg-slate-900 rounded-xl border-2 border-dashed border-emerald-300 overflow-hidden min-h-[250px] flex items-center justify-center text-slate-400">
+                <div class="text-center p-4" id="placeholder-text">
+                    <i class="fa-solid fa-camera text-4xl text-slate-300 mb-2 animate-pulse"></i>
+                    <p class="text-xs">Camera interface will initialize below</p>
+                </div>
+            </div>
+            
+            <!-- Manual Input Alternative Box -->
+            <div class="mt-4 pt-4 border-t border-slate-100">
+                <p class="text-xs text-slate-400 mb-2 text-center">Can't scan? Type the barcode number below</p>
+                <div class="flex space-x-2">
+                    <input type="text" id="manual-barcode" placeholder="e.g. 3017620422003" class="flex-grow px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-emerald-500 bg-slate-50">
+                    <button onclick="checkManualBarcode()" class="bg-slate-800 text-white px-4 py-2 text-sm font-medium rounded-xl hover:bg-slate-700 transition">Check</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Results Screen Section -->
+        <div id="result-section" class="hidden transform transition duration-300">
+            <!-- Loader State -->
+            <div id="result-loading" class="hidden text-center py-6">
+                <i class="fa-solid fa-circle-notch animate-spin text-3xl text-emerald-600"></i>
+                <p class="text-sm text-slate-500 mt-2">Checking ingredients against global databases...</p>
+            </div>
+
+            <!-- Main Results Display Card -->
+            <div id="result-card" class="bg-white rounded-2xl shadow-md border p-5 space-y-4">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h3 id="product-title" class="font-bold text-lg text-slate-900 leading-tight">Product Name</h3>
+                        <p id="product-brand" class="text-xs text-slate-400 mt-0.5">Brand Family</p>
+                    </div>
+                    <!-- Big Badge Indicator -->
+                    <span id="status-badge" class="px-3 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase shadow-xs">HALAL</span>
+                </div>
+
+                <!-- Descriptive Warning Message -->
+                <div id="status-alert-box" class="p-3 rounded-xl text-sm flex items-start space-x-2.5">
+                    <i id="status-icon" class="text-lg mt-0.5"></i>
+                    <p id="status-description" class="font-medium"></p>
+                </div>
+
+                <!-- Core Ingredient Breakdown Info -->
+                <div class="space-y-1">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detected Ingredients</h4>
+                    <p id="product-ingredients" class="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 max-h-32 overflow-y-auto"></p>
+                </div>
+
+                <!-- Analysis Summary Info -->
+                <div class="text-[11px] text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span>Database: Open Food Facts</span>
+                    <span id="barcode-display">Code: 0000000000000</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- App Bottom Legal Footer -->
+    <footer class="bg-slate-100 text-center py-3 text-[10px] text-slate-400 border-t border-slate-200 px-4">
+        Always cross-reference product labeling manually. Ingredients can change depending on manufacturing regions.
+    </footer>
+
+    <!-- App Logical Framework JavaScript Script -->
+    <script>
+        // Array of strictly forbidden non-halal indicator elements
+        const HARAM_KEYWORDS = ['pork', 'bacon', 'lard', 'gelatin', 'gelatine', 'carmine', 'cochineal', 'e120', 'alcohol', 'wine', 'beer', 'rum', 'pepsin', 'whey'];
+        // Array of doubtful additives (Mushbooh E-numbers)
+        const MUSHBOOH_KEYWORDS = ['e471', 'e472', 'e473', 'e474', 'e475', 'e476', 'e477', 'e478', 'mono- and diglycerides', 'diglycerides', 'enzymes', 'rennet', 'shortening'];
+
+        let html5QrcodeScanner;
+
+        // Automatically start scanner initialization on site load
+        window.addEventListener('DOMContentLoaded', () => {
+            initScanner();
+        });
+
+        function initScanner() {
+            document.getElementById('placeholder-text').remove();
+            
+            // Set up configurations optimizing for real-time mobile camera capture
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { 
+                fps: 15, 
+                qrbox: { width: 280, height: 160 },
+                aspectRatio: 1.0
+            };
+
+            // Request rear camera parameters directly
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess
+            ).catch(err => {
+                console.error("Camera access failed: ", err);
+                document.getElementById('reader').innerHTML = `
+                    <div class="text-center p-4 text-red-500">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i>
+                        <p class="text-xs font-semibold">Camera Access Blocked</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Please allow camera permissions or enter barcodes manually below.</p>
+                    </div>`;
+            });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Vibrate mobile hardware gently if device supports it to confirm capture
+            if (navigator.vibrate) navigator.vibrate(100);
+            
+            // Query data
+            fetchProductData(decodedText);
+        }
+
+        function checkManualBarcode() {
+            const code = document.getElementById('manual-barcode').value.trim();
+            if (code) {
+                fetchProductData(code);
+            }
+        }
+
+        async function fetchProductData(barcode) {
+            const resultSection = document.getElementById('result-section');
+            const loadingIndicator = document.getElementById('result-loading');
+            const resultCard = document.getElementById('result-card');
+
+            resultSection.classList.remove('hidden');
+            loadingIndicator.classList.remove('hidden');
+            resultCard.classList.add('hidden');
+
+            try {
+                // Fetch product details via Open Food Facts API
+                const response = await fetch(`https://openfoodfacts.org{barcode}.json?fields=product_name,brands,ingredients_text,code`);
+                const data = await response.json();
+
+                if (data.status === 1 && data.product) {
+                    analyzeProduct(data.product);
+                } else {
+                    showUnknownProduct(barcode);
+                }
+            } catch (error) {
+                console.error("Network error:", error);
+                showUnknownProduct(barcode);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                resultCard.classList.remove('hidden');
+            }
+        }
+
+        function analyzeProduct(product) {
+            const name = product.product_name || "Unknown Product";
