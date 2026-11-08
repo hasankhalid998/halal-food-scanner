@@ -95,6 +95,23 @@
             </div>
         </div>
 
+        <!-- NEW DEVELOPER ATTRIBUTION PROFILE CARD -->
+        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-100 flex items-center justify-between shadow-xs">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-600 text-white rounded-xl h-10 w-10 flex items-center justify-center font-bold shadow-xs">
+                    KH
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Lead Application Developer</h4>
+                    <p class="text-sm font-bold text-slate-800">Khalid Hasan</p>
+                </div>
+            </div>
+            <a href="https://github.com" target="_blank" class="bg-slate-900 text-white text-xs px-3 py-1.5 rounded-xl hover:bg-slate-800 transition font-medium flex items-center space-x-1">
+                <i class="fa-brands fa-github text-sm"></i>
+                <span>Portfolio</span>
+            </a>
+        </div>
+
     </main>
 
     <!-- App Bottom Legal Footer -->
@@ -162,29 +179,3 @@
             const resultSection = document.getElementById('result-section');
             const loadingIndicator = document.getElementById('result-loading');
             const resultCard = document.getElementById('result-card');
-
-            resultSection.classList.remove('hidden');
-            loadingIndicator.classList.remove('hidden');
-            resultCard.classList.add('hidden');
-
-            try {
-                // Fetch product details via Open Food Facts API
-                const response = await fetch(`https://openfoodfacts.org{barcode}.json?fields=product_name,brands,ingredients_text,code`);
-                const data = await response.json();
-
-                if (data.status === 1 && data.product) {
-                    analyzeProduct(data.product);
-                } else {
-                    showUnknownProduct(barcode);
-                }
-            } catch (error) {
-                console.error("Network error:", error);
-                showUnknownProduct(barcode);
-            } finally {
-                loadingIndicator.classList.add('hidden');
-                resultCard.classList.remove('hidden');
-            }
-        }
-
-        function analyzeProduct(product) {
-            const name = product.product_name || "Unknown Product";
